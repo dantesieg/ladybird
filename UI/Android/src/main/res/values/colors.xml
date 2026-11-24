@@ -1,11 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Colours of the browser interface, from UI/Android/design. -->
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="grey">#FF6B6B6B</color>
+    <color name="paper">#FFFBFAF7</color>
+    <color name="ink">#FF17181C</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="chip">#FFF1EFEA</color>
+    <color name="line">#FFE7E5DF</color>
+    <color name="text_secondary">#FF3F424A</color>
+    <color name="text_muted">#FF5D6069</color>
+    <color name="accent">#FF6A39DB</color>
+    <color name="on_accent">#FFFFFFFF</color>
+    <color name="tint">#FFECE6FB</color>
+    <color name="deep">#FF4B22A8</color>
+    <color name="sheet">#FFF1EFEA</color>
+    <color name="segment">#FFE4E2DC</color>
+    <color name="segment_selected">#FFFFFFFF</color>
+    <color name="card_line">#FFE4E2DC</color>
+    <color name="divider">#FFEFEDE7</color>
+    <color name="toggle_off">#FFC9C6BE</color>
+    <color name="tile_green">#FFDDE6D5</color>
+    <color name="tile_violet">#FFECE6FB</color>
+    <color name="tile_blue">#FFDCE7F2</color>
+    <color name="tile_sand">#FFF3E6CF</color>
+    <color name="logo_tile">#FFF2EEFA</color>
+    <color name="scrim">#5217181C</color>
 </resources>

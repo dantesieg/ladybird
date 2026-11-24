@@ -8,11 +8,9 @@ package org.serenityos.ladybird
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.KeyEvent
-import android.view.inputmethod.EditorInfo
-import android.widget.EditText
-import android.widget.TextView
-import org.serenityos.ladybird.databinding.ActivityMainBinding
+import android.content.Intent
+import android.content.res.Configuration
+import androidx.activity.OnBackPressedCallback
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
@@ -26,10 +24,8 @@ import kotlin.io.path.outputStream
 
 class LadybirdActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
     private lateinit var resourceDir: String
-    private lateinit var view: WebView
-    private lateinit var urlEditText: EditText
+    private lateinit var browser: Browser
     private var timerService = TimerExecutorService()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,9 +72,6 @@ class LadybirdActivity : AppCompatActivity() {
         // The helper processes ship as lib<Name>.so in the native library directory, which is where they are run from.
         initNativeCode(resourceDir, "Ladybird", timerService, userDir, applicationInfo.nativeLibraryDir)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
         // Android leaves an app at 60 Hz unless it asks for more, so ask for the fastest mode at the current resolution.
         display?.let { display ->
             val current = display.mode
@@ -87,20 +80,25 @@ class LadybirdActivity : AppCompatActivity() {
                 .maxByOrNull { it.refreshRate }
                 ?.let { mode -> window.attributes = window.attributes.also { it.preferredDisplayModeId = mode.modeId } }
         }
-        setSupportActionBar(binding.toolbar)
-        urlEditText = binding.urlEditText
-        view = binding.webView
-        view.onLoadStart = { url: String, _ ->
-            urlEditText.setText(url, TextView.BufferType.EDITABLE)
-        }
-        urlEditText.setOnEditorActionListener { textView: TextView, actionId: Int, _: KeyEvent? ->
-            when (actionId) {
-                EditorInfo.IME_ACTION_GO, EditorInfo.IME_ACTION_SEARCH -> view.loadURL(textView.text.toString())
+
+        browser = Browser(this)
+        browser.openTab(intent.dataString, isPrivate = false)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (!browser.handleBack())
+                    moveTaskToBack(true)
             }
-            false
-        }
-        view.initialize(isPrivate = false, websitesPreferDark = false)
-        view.loadURL(intent.dataString ?: "https://ladybird.dev")
+        })
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.dataString?.let { browser.openTab(it, isPrivate = false) }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        browser.onConfigurationChanged()
     }
 
     override fun onStart() {
@@ -108,7 +106,7 @@ class LadybirdActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        view.dispose()
+        browser.dispose()
         disposeNativeCode()
         super.onDestroy()
     }
@@ -127,6 +125,7 @@ class LadybirdActivity : AppCompatActivity() {
     private external fun execMainEventLoop()
 
     companion object {
+
         // Used to load the 'ladybird' library on application startup.
         init {
             System.loadLibrary("Ladybird")

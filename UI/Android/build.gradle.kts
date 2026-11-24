@@ -3,6 +3,8 @@ plugins {
 }
 
 android {
+    // The interface's fonts. They sit apart from src/main/assets, which the native build fills.
+    sourceSets["main"].assets.srcDir("src/main/fonts")
     namespace = "org.serenityos.ladybird"
     compileSdk = 35
     // FIXME: Replace the NDK version to a stable one (this is r29 beta 2)
