@@ -78,6 +78,15 @@ class LadybirdActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Android leaves an app at 60 Hz unless it asks for more, so ask for the fastest mode at the current resolution.
+        display?.let { display ->
+            val current = display.mode
+            display.supportedModes
+                .filter { it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight }
+                .maxByOrNull { it.refreshRate }
+                ?.let { mode -> window.attributes = window.attributes.also { it.preferredDisplayModeId = mode.modeId } }
+        }
         setSupportActionBar(binding.toolbar)
         urlEditText = binding.urlEditText
         view = binding.webView

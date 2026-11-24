@@ -184,6 +184,13 @@ Java_org_serenityos_ladybird_WebViewImplementation_nativeMouseEvent(JNIEnv*, job
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_org_serenityos_ladybird_WebViewImplementation_nativeSetMaximumFramesPerSecond(JNIEnv*, jobject, jlong instance, jfloat maximum_frames_per_second)
+{
+    if (auto* view = reinterpret_cast<AndroidView*>(instance))
+        view->set_maximum_frames_per_second(maximum_frames_per_second);
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_org_serenityos_ladybird_WebViewImplementation_nativeScroll(JNIEnv*, jobject, jlong instance, jfloat x, jfloat y, jfloat delta_x, jfloat delta_y, jint phase)
 {
     // The Java side numbers the phases: 0 is a drag, 1 is a fling's momentum, and 2 ends the gesture.

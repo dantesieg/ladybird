@@ -227,6 +227,8 @@ class WebView(context: Context, attributeSet: AttributeSet) : View(context, attr
 
         val pixelDensity = context.resources.displayMetrics.density
         viewImpl.setDevicePixelRatio(pixelDensity)
+        // LadybirdActivity asks for the display's fastest mode, so let the page render that fast.
+        display?.let { display -> viewImpl.setMaximumFramesPerSecond(display.supportedModes.maxOf { it.refreshRate }) }
 
         // FIXME: Account for scroll offset when view supports scrolling
         viewImpl.setViewportGeometry(w, h)

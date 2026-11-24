@@ -250,6 +250,12 @@ void AndroidView::set_device_pixel_ratio(double device_pixel_ratio)
     send_viewport();
 }
 
+void AndroidView::set_maximum_frames_per_second(double maximum_frames_per_second)
+{
+    if (auto* hub = HubClient::the())
+        hub->async_view_set_display_metadata(m_view_id, {}, maximum_frames_per_second, false);
+}
+
 void AndroidView::load(StringView url_string)
 {
     auto url = URL::Parser::basic_parse(url_string);

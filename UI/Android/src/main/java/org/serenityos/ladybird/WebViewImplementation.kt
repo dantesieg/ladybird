@@ -50,6 +50,10 @@ class WebViewImplementation(private val view: WebView) {
         nativeMouseEvent(nativeInstance, eventType, x, y, rawX, rawY)
     }
 
+    fun setMaximumFramesPerSecond(framesPerSecond: Float) {
+        nativeSetMaximumFramesPerSecond(nativeInstance, framesPerSecond)
+    }
+
     fun scroll(x: Float, y: Float, deltaX: Float, deltaY: Float, phase: Int) {
         nativeScroll(nativeInstance, x, y, deltaX, deltaY, phase)
     }
@@ -85,6 +89,7 @@ class WebViewImplementation(private val view: WebView) {
     private external fun nativeSetDevicePixelRatio(instance: Long, ratio: Float)
     private external fun nativeLoadURL(instance: Long, url: String)
     private external fun nativeMouseEvent(instance: Long, eventType: Int, x: Float, y: Float, rawX: Float, rawY: Float)
+    private external fun nativeSetMaximumFramesPerSecond(instance: Long, framesPerSecond: Float)
     private external fun nativeScroll(instance: Long, x: Float, y: Float, deltaX: Float, deltaY: Float, phase: Int)
     private external fun nativeCommitText(instance: Long, text: String)
     private external fun nativePressKey(instance: Long, key: Int)

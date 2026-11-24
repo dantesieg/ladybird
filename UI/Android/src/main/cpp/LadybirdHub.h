@@ -75,6 +75,7 @@ public:
 
     void set_viewport(int width, int height);
     void set_device_pixel_ratio(double);
+    void set_maximum_frames_per_second(double);
     void load(StringView url);
     void touch(int action, float x, float y);
     void scroll(float x, float y, float delta_x, float delta_y, Web::ScrollGesturePhase);
