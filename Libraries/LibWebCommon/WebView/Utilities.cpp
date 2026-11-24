@@ -13,6 +13,7 @@
 #include <LibCore/System.h>
 #include <LibURL/URL.h>
 #include <LibWebCommon/WebView/Utilities.h>
+#include <stdlib.h>
 
 #define TOKENCAT(x, y) x##y
 #define STRINGIFY(x) TOKENCAT(x, sv)
@@ -74,6 +75,11 @@ void platform_init(Optional<ByteString> ladybird_binary_path)
     s_ladybird_binary_path = move(ladybird_binary_path);
 
     s_ladybird_resource_root = [] {
+#ifdef AK_OS_ANDROID
+        // Android apps unpack their resources into the app's own storage, which the UI names for every process it starts.
+        if (auto const* resource_root = getenv("LADYBIRD_RESOURCE_ROOT"))
+            return ByteString { resource_root };
+#endif
         auto app_dir = MUST(application_directory());
 #ifdef AK_OS_MACOS
         return LexicalPath(app_dir).parent().append("Resources"sv).string();
@@ -100,6 +106,11 @@ ErrorOr<Vector<ByteString>> get_paths_for_helper_process(StringView process_name
     TRY(paths.try_append(ByteString::formatted("{}/{}.exe", application_path, process_name)));
 #else
     TRY(paths.try_append(ByteString::formatted("{}/{}", application_path, process_name)));
+#endif
+#if defined(AK_OS_ANDROID)
+    // An APK can only carry executables as libraries in its native library directory, named lib<Name>.so.
+    auto const* helper_directory = getenv("LADYBIRD_HELPER_DIRECTORY");
+    TRY(paths.try_append(ByteString::formatted("{}/lib{}.so", helper_directory ? helper_directory : application_path.characters(), process_name)));
 #endif
     // NOTE: Add platform-specific paths here
     return paths;

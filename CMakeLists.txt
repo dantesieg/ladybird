@@ -47,6 +47,14 @@ endif()
 set(LADYBIRD_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LADYBIRD_SOURCE_DIR}/Meta/CMake")
 
+# Android runs the Linux kernel, and AK_OS_LINUX is defined there, so build the Linux sources as well.
+if (ANDROID)
+    set(LINUX TRUE)
+    # The helper processes ship next to the libraries they need, such as libc++_shared.so, and are started with
+    # environments that may not name that directory, so each looks beside itself first.
+    add_link_options("LINKER:-rpath,\$ORIGIN")
+endif()
+
 include(cmake_options)
 include(compile_options)
 include(check_for_dependencies)

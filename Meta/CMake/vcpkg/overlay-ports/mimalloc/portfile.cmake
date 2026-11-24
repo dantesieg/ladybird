@@ -29,6 +29,8 @@ vcpkg_cmake_configure(
         -DMI_BUILD_STATIC=${MI_BUILD_STATIC}
         -DMI_BUILD_SHARED=${MI_BUILD_SHARED}
         -DMI_INSTALL_TOPLEVEL=ON
+        # Android loads an app's code with dlopen(), which has no room for initial-exec thread-local variables.
+        -DMI_LOCAL_DYNAMIC_TLS=${VCPKG_TARGET_IS_ANDROID}
     OPTIONS_DEBUG
         -DMI_DEBUG_FULL=ON
     OPTIONS_RELEASE

@@ -122,8 +122,12 @@ fn main() {
     let address_sanitizer = env::var_os("CARGO_FEATURE_ADDRESS_SANITIZER").is_some();
     let configuration = layout_table::LayoutConfiguration {
         heap_region_offset_mask: HEAP_REGION_SIZE - 1,
-        // Mirrors GC::PrimitiveStorage::default_cage_size.
-        primitive_storage_cage_offset_mask: 4 * TIB - 1,
+        // Mirrors GC::PrimitiveStorage::default_cage_size. Android kernels give a process 39 bits of address space.
+        primitive_storage_cage_offset_mask: if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("android") {
+            64 * GIB - 1
+        } else {
+            4 * TIB - 1
+        },
         // Instrumented frames need more room before the stack is considered exhausted.
         vm_stack_space_limit: if address_sanitizer { 96 * KIB } else { 32 * KIB },
     };

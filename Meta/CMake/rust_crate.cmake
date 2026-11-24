@@ -22,7 +22,11 @@ if (NOT DEFINED CACHE{RUST_TARGET_TRIPLE})
 endif()
 
 # Compiler flags shared by Rust libraries, binaries, and tests.
-set(RUSTC_TARGET_FLAGS -Dwarnings ${RUSTC_TARGET_CPU_FLAGS} ${RUSTC_TARGET_FRAME_POINTER_FLAGS})
+set(RUSTC_TARGET_FLAGS ${RUSTC_TARGET_CPU_FLAGS} ${RUSTC_TARGET_FRAME_POINTER_FLAGS})
+# Android builds compile code paths upstream never builds, so their dead-code warnings must not fail the build.
+if (NOT ANDROID)
+    list(PREPEND RUSTC_TARGET_FLAGS -Dwarnings)
+endif()
 list(JOIN RUSTC_TARGET_FLAGS " " RUSTC_TARGET_FLAGS)
 
 # import_rust_crate(MANIFEST_PATH path/to/Cargo.toml CRATE_NAME name [PANIC_UNWIND] [NO_DEFAULT_FEATURES]
@@ -423,6 +427,16 @@ function(_rust_crate_common_setup)
         list(APPEND cargo_env
             "CARGO_TARGET_${target_upper}_LINKER=${CMAKE_C_COMPILER}"
             "AR_${target_underscore}=${CMAKE_AR}"
+        )
+    endif()
+
+    # The cc crate cannot derive the NDK's versioned target triple on its own, so hand it the compiler CMake uses.
+    if (ANDROID)
+        list(APPEND cargo_env
+            "CC_${target_underscore}=${CMAKE_C_COMPILER}"
+            "CXX_${target_underscore}=${CMAKE_CXX_COMPILER}"
+            "CFLAGS_${target_underscore}=--target=${CMAKE_C_COMPILER_TARGET} --sysroot=${CMAKE_SYSROOT}"
+            "CXXFLAGS_${target_underscore}=--target=${CMAKE_CXX_COMPILER_TARGET} --sysroot=${CMAKE_SYSROOT}"
         )
     endif()
 

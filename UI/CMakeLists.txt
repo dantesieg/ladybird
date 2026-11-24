@@ -174,6 +174,10 @@ if (LINUX OR APPLE)
 else()
     list(APPEND LADYBIRD_LIBS hubservice)
 endif()
+# NB: The Android UI has no gamepad support, and SDL's JNI_OnLoad would look for SDL's own Java classes in the app.
+if (ANDROID)
+    list(REMOVE_ITEM LADYBIRD_LIBS LibGamepad)
+endif()
 target_link_libraries(${LADYBIRD_TARGET} ${LADYBIRD_LIBS})
 target_link_libraries(${LADYBIRD_TARGET} OpenSSL::Crypto OpenSSL::SSL)
 

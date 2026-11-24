@@ -31,7 +31,12 @@ public:
         Yes,
     };
 
+#ifdef AK_OS_ANDROID
+    // Android kernels give a process 39 bits (512 GiB) of address space, which has no room for the usual cage.
+    static constexpr size_t default_cage_size = 64ull * GiB;
+#else
     static constexpr size_t default_cage_size = 4ull * TiB;
+#endif
     static_assert(is_power_of_two(default_cage_size));
     static constexpr size_t cage_offset_mask = default_cage_size - 1;
     // NB: JIT code accesses typed array elements at a masked offset plus a

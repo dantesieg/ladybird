@@ -10,7 +10,9 @@
 #include <AK/HashMap.h>
 #include <AK/NonnullOwnPtr.h>
 #include <AK/WeakPtr.h>
+#include <LibCore/Event.h>
 #include <LibCore/EventLoopImplementation.h>
+#include <LibCore/EventReceiver.h>
 #include <jni.h>
 
 extern "C" struct ALooper;
@@ -71,6 +73,9 @@ public:
     virtual size_t pump(PumpMode) override;
     virtual void quit(int) override;
     virtual void wake() override;
+
+    // Queues an event on this loop's thread, as timers that fire on the timer service's thread do.
+    void post_event(Core::EventReceiver&, Core::Event::Type);
 
     virtual bool was_exit_requested() const override { return false; }
 

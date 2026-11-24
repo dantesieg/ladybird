@@ -124,7 +124,7 @@ if (NOT WIN32)
     list(APPEND SOURCES TerminalInputParser.cpp TerminalWebView.cpp)
 endif()
 
-if (LINUX OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+if ((LINUX AND NOT ANDROID) OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     # Web notifications reach the desktop's notification daemon over the session bus.
     pkg_check_modules(DBUS REQUIRED IMPORTED_TARGET dbus-1)
     list(APPEND SOURCES NotificationBackendFreedesktop.cpp)
@@ -198,7 +198,7 @@ if (APPLE)
     target_link_libraries(LibWebView PRIVATE "-framework AppKit" "-framework CoreServices" "-framework Foundation" "-framework MediaPlayer" "-framework UserNotifications")
 endif()
 
-if (LINUX OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+if ((LINUX AND NOT ANDROID) OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     target_link_libraries(LibWebView PRIVATE PkgConfig::DBUS)
 endif()
 

@@ -70,8 +70,11 @@ class LadybirdActivity : AppCompatActivity() {
                 }
             }
         }
-        val userDir = applicationContext.getExternalFilesDir(null)!!.absolutePath;
-        initNativeCode(resourceDir, "Ladybird", timerService, userDir)
+        val userDir = applicationContext.getExternalFilesDir(null)!!.absolutePath
+        for (name in listOf("config", "userdata", "cache", "run", "tmp"))
+            File(userDir, name).mkdirs()
+        // The helper processes ship as lib<Name>.so in the native library directory, which is where they are run from.
+        initNativeCode(resourceDir, "Ladybird", timerService, userDir, applicationInfo.nativeLibraryDir)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -108,7 +111,7 @@ class LadybirdActivity : AppCompatActivity() {
     }
 
     private external fun initNativeCode(
-        resourceDir: String, tag: String, timerService: TimerExecutorService, userDir: String
+        resourceDir: String, tag: String, timerService: TimerExecutorService, userDir: String, nativeLibraryDir: String
     )
 
     private external fun disposeNativeCode()

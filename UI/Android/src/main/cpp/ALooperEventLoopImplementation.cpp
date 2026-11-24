@@ -5,6 +5,7 @@
  */
 
 #include "ALooperEventLoopImplementation.h"
+#include <LibCore/EventReceiver.h>
 #include "JNIHelpers.h"
 #include <AK/Time.h>
 #include <LibCore/EventLoop.h>
@@ -203,9 +204,9 @@ void ALooperEventLoopImplementation::wake()
     ALooper_wake(m_event_loop);
 }
 
-void ALooperEventLoopImplementation::post_event(Core::EventReceiver& receiver, NonnullOwnPtr<Core::Event>&& event)
+void ALooperEventLoopImplementation::post_event(Core::EventReceiver& receiver, Core::Event::Type type)
 {
-    m_thread_event_queue.post_event(receiver, move(event));
+    m_thread_event_queue.post_event(&receiver, type);
 
     if (&m_thread_event_queue != &Core::ThreadEventQueue::current())
         wake();

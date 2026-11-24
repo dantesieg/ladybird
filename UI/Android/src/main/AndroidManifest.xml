@@ -16,6 +16,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application
+        android:extractNativeLibs="true"
         android:allowBackup="true"
         android:allowNativeHeapPointerTagging="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -46,21 +47,6 @@
                 android:name="android.app.extract_android_style"
                 android:value="minimal" />
         </activity>
-        <service
-            android:name=".WebContentService"
-            android:enabled="true"
-            android:exported="false"
-            android:process=":WebContent" />
-        <service
-            android:name=".RequestServerService"
-            android:enabled="true"
-            android:exported="false"
-            android:process=":RequestServer" />
-        <service
-            android:name=".ImageDecoderService"
-            android:enabled="true"
-            android:exported="false"
-            android:process=":ImageDecoder" />
     </application>
 
 </manifest>

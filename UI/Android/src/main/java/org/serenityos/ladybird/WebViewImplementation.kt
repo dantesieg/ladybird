@@ -6,9 +6,6 @@
 
 package org.serenityos.ladybird
 
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
 import android.graphics.Bitmap
 import android.util.Log
 import android.view.MotionEvent
@@ -22,7 +19,6 @@ class WebViewImplementation(private val view: WebView) {
     // Instance Pointer to native object, very unsafe :)
     private var nativeInstance: Long = 0
     private lateinit var resourceDir: String
-    private lateinit var connection: ServiceConnection
 
     fun initialize(resourceDir: String) {
         this.resourceDir = resourceDir
@@ -54,20 +50,21 @@ class WebViewImplementation(private val view: WebView) {
         nativeMouseEvent(nativeInstance, eventType, x, y, rawX, rawY)
     }
 
+    fun scroll(x: Float, y: Float, deltaX: Float, deltaY: Float, phase: Int) {
+        nativeScroll(nativeInstance, x, y, deltaX, deltaY, phase)
+    }
+
+    fun commitText(text: String) {
+        nativeCommitText(nativeInstance, text)
+    }
+
+    fun pressKey(key: Int) {
+        nativePressKey(nativeInstance, key)
+    }
+
     // Functions called from native code
-    fun bindWebContentService(ipcFd: Int) {
-        val connector = LadybirdServiceConnection(ipcFd, resourceDir)
-        connector.onDisconnect = {
-            // FIXME: Notify impl that service is dead and might need restarted
-            Log.e("WebContentView", "WebContent Died! :(")
-        }
-        // FIXME: Unbind this at some point maybe
-        view.context.bindService(
-            Intent(view.context, WebContentService::class.java),
-            connector,
-            Context.BIND_AUTO_CREATE
-        )
-        connection = connector
+    fun onInputMethodStateChanged(isEnabled: Boolean) {
+        view.post { view.onInputMethodStateChanged(isEnabled) }
     }
 
     fun invalidateLayout() {
@@ -88,6 +85,9 @@ class WebViewImplementation(private val view: WebView) {
     private external fun nativeSetDevicePixelRatio(instance: Long, ratio: Float)
     private external fun nativeLoadURL(instance: Long, url: String)
     private external fun nativeMouseEvent(instance: Long, eventType: Int, x: Float, y: Float, rawX: Float, rawY: Float)
+    private external fun nativeScroll(instance: Long, x: Float, y: Float, deltaX: Float, deltaY: Float, phase: Int)
+    private external fun nativeCommitText(instance: Long, text: String)
+    private external fun nativePressKey(instance: Long, key: Int)
 
     companion object {
         /*
@@ -96,6 +96,15 @@ class WebViewImplementation(private val view: WebView) {
          * class/field/method IDs. Throws on failure.
          */
         private external fun nativeClassInit()
+
+        // Must match nativePressKey in LadybirdActivity.cpp.
+        const val KEY_BACKSPACE = 0
+        const val KEY_ENTER = 1
+
+        // Must match nativeScroll in LadybirdActivity.cpp.
+        const val SCROLL_DRAG = 0
+        const val SCROLL_MOMENTUM = 1
+        const val SCROLL_END = 2
 
         init {
             nativeClassInit()
