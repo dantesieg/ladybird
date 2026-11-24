@@ -81,8 +81,11 @@ class LadybirdActivity : AppCompatActivity() {
                 ?.let { mode -> window.attributes = window.attributes.also { it.preferredDisplayModeId = mode.modeId } }
         }
 
-        browser = Browser(this)
-        browser.openTab(intent.dataString, isPrivate = false)
+        // The browser and its tabs belong to the process, and outlive an activity that Android creates again.
+        browser = sharedBrowser?.also { it.attach(this) } ?: Browser(this).also {
+            sharedBrowser = it
+            it.openTab(intent.dataString, isPrivate = false)
+        }
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (!browser.handleBack())
@@ -106,8 +109,10 @@ class LadybirdActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        browser.dispose()
-        disposeNativeCode()
+        if (isFinishing) {
+            browser.dispose()
+            sharedBrowser = null
+        }
         super.onDestroy()
     }
 
@@ -121,10 +126,10 @@ class LadybirdActivity : AppCompatActivity() {
         resourceDir: String, tag: String, timerService: TimerExecutorService, userDir: String, nativeLibraryDir: String
     )
 
-    private external fun disposeNativeCode()
     private external fun execMainEventLoop()
 
     companion object {
+        private var sharedBrowser: Browser? = null
 
         // Used to load the 'ladybird' library on application startup.
         init {

@@ -80,7 +80,8 @@ class WebView(context: Context, attributeSet: AttributeSet?) : View(context, att
 
     fun onInputMethodStateChanged(isEnabled: Boolean) {
         inputMethodIsEnabled = isEnabled
-        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        // NB: The view outlives its activity, so it asks the window it is in now for the input method.
+        val imm = rootView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.restartInput(this)
         if (isEnabled) {
             requestFocus()

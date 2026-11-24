@@ -36,6 +36,14 @@ static ByteString byte_string_from_jstring(JNIEnv* env, jstring string)
 extern "C" JNIEXPORT void JNICALL
 Java_org_serenityos_ladybird_LadybirdActivity_initNativeCode(JNIEnv* env, jobject thiz, jstring resource_dir, jstring tag_name, jobject timer_service, jstring user_dir, jstring native_library_dir)
 {
+    // Android creates the activity again for some configuration changes, such as a new theme. The browser outlives it,
+    // so only the new activity takes over running the event loop.
+    if (s_main_event_loop) {
+        env->DeleteGlobalRef(s_java_instance);
+        s_java_instance = env->NewGlobalRef(thiz);
+        return;
+    }
+
     // The asset bundle unpacks Base/res into a "res" directory of the app's files.
     auto resource_root = ByteString::formatted("{}/res", byte_string_from_jstring(env, resource_dir));
     auto helper_directory = byte_string_from_jstring(env, native_library_dir);
@@ -95,16 +103,6 @@ Java_org_serenityos_ladybird_LadybirdActivity_execMainEventLoop(JNIEnv*, jobject
 {
     if (s_main_event_loop)
         s_main_event_loop->pump(Core::EventLoop::WaitMode::PollForEvents);
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_org_serenityos_ladybird_LadybirdActivity_disposeNativeCode(JNIEnv* env, jobject)
-{
-    s_hub = nullptr;
-    s_main_event_loop = nullptr;
-    s_schedule_event_loop_method = nullptr;
-    env->DeleteGlobalRef(s_java_instance);
-    delete &Core::EventLoopManager::the();
 }
 
 // The WebView's native half.
