@@ -114,6 +114,18 @@ static ReadonlySpan<char const*> device_extensions_to_enable(VkPhysicalDevice ph
         return enabled_extensions;
     return enabled_extensions.trim(enabled_extensions.size() - 1);
 }
+#elif defined(AK_OS_ANDROID)
+// NB: Vulkan on Android always has these. The first imports the memory of a hardware buffer that is shared with other
+//     processes, and the second hands such a buffer over to whoever outside of Vulkan reads it next.
+static constexpr Array<char const*, 2> s_enabled_device_extensions = {
+    "VK_ANDROID_external_memory_android_hardware_buffer",
+    VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME,
+};
+
+static ReadonlySpan<char const*> device_extensions_to_enable(VkPhysicalDevice)
+{
+    return s_enabled_device_extensions;
+}
 #else
 static ReadonlySpan<char const*> device_extensions_to_enable(VkPhysicalDevice)
 {
