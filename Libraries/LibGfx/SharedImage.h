@@ -11,6 +11,9 @@
 #include <AK/Variant.h>
 #include <LibGfx/Bitmap.h>
 #include <LibGfx/Forward.h>
+#ifdef AK_OS_ANDROID
+#    include <LibGfx/AndroidHardwareBufferHandle.h>
+#endif
 #include <LibGfx/LinuxDmaBufHandle.h>
 #include <LibGfx/ShareableBitmap.h>
 #include <LibIPC/File.h>
@@ -58,13 +61,22 @@ public:
     explicit SharedImage(ShareableBitmap);
     explicit SharedImage(LinuxDmaBufHandle&&);
     explicit SharedImage(WindowsD3DHandle&&);
+#    ifdef AK_OS_ANDROID
+    explicit SharedImage(AndroidHardwareBufferHandle&&);
+#    endif
 #endif
 
 private:
 #ifdef AK_OS_MACOS
     Core::MachPort m_port;
 #else
-    Variant<ShareableBitmap, LinuxDmaBufHandle, WindowsD3DHandle> m_data;
+    Variant<ShareableBitmap, LinuxDmaBufHandle, WindowsD3DHandle
+#    ifdef AK_OS_ANDROID
+        ,
+        AndroidHardwareBufferHandle
+#    endif
+        >
+        m_data;
 #endif
 
     friend class SharedImageBuffer;

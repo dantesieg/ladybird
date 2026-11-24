@@ -73,6 +73,13 @@ SharedImageBuffer::SharedImageBuffer(WindowsD3DHandle&& d3d_handle)
 {
 }
 #    endif
+
+#    ifdef AK_OS_ANDROID
+SharedImageBuffer::SharedImageBuffer(AndroidHardwareBufferHandle&& hardware_buffer)
+    : m_android_hardware_buffer(move(hardware_buffer))
+{
+}
+#    endif
 #endif
 
 SharedImageBuffer SharedImageBuffer::create(IntSize size)
@@ -133,7 +140,15 @@ ErrorOr<SharedImageBuffer> SharedImageBuffer::import_from_shared_image(SharedIma
             (void)d3d_handle;
             VERIFY_NOT_REACHED();
 #    endif
-        });
+        }
+#    ifdef AK_OS_ANDROID
+        ,
+        [](AndroidHardwareBufferHandle& hardware_buffer) -> SharedImageBuffer {
+            // NB: The GPU renders into the buffer in a layout of its own, so it has no bitmap view of the pixels.
+            return SharedImageBuffer(move(hardware_buffer));
+        }
+#    endif
+    );
 #endif
 }
 

@@ -38,6 +38,13 @@ SharedImage::SharedImage(WindowsD3DHandle&& d3d_handle)
 {
 }
 
+#    ifdef AK_OS_ANDROID
+SharedImage::SharedImage(AndroidHardwareBufferHandle&& hardware_buffer)
+    : m_data(move(hardware_buffer))
+{
+}
+#    endif
+
 #    ifdef USE_VULKAN_DMABUF_IMAGES
 SharedImage duplicate_shared_image(VulkanImage const& vulkan_image)
 {
@@ -84,6 +91,7 @@ enum class SharedImageBackingType : u8 {
     ShareableBitmap,
     LinuxDmaBuf,
     WindowsD3DTexture,
+    AndroidHardwareBuffer,
 };
 
 template<>
@@ -125,7 +133,16 @@ ErrorOr<void> encode(Encoder& encoder, Gfx::SharedImage const& shared_image)
             TRY(encoder.encode(SharedImageBackingType::WindowsD3DTexture));
             TRY(encoder.encode(d3d_handle));
             return {};
-        });
+        }
+#    ifdef AK_OS_ANDROID
+        ,
+        [&](Gfx::AndroidHardwareBufferHandle const& hardware_buffer) -> ErrorOr<void> {
+            TRY(encoder.encode(SharedImageBackingType::AndroidHardwareBuffer));
+            TRY(encoder.encode(hardware_buffer));
+            return {};
+        }
+#    endif
+    );
 #endif
     return {};
 }
@@ -145,6 +162,10 @@ ErrorOr<Gfx::SharedImage> decode(Decoder& decoder)
         return Gfx::SharedImage { TRY(decoder.decode<Gfx::LinuxDmaBufHandle>()) };
     case SharedImageBackingType::WindowsD3DTexture:
         return Gfx::SharedImage { TRY(decoder.decode<Gfx::WindowsD3DHandle>()) };
+#    ifdef AK_OS_ANDROID
+    case SharedImageBackingType::AndroidHardwareBuffer:
+        return Gfx::SharedImage { TRY(decoder.decode<Gfx::AndroidHardwareBufferHandle>()) };
+#    endif
     default:
         VERIFY_NOT_REACHED();
     }

@@ -51,6 +51,10 @@ if (HAS_DIRECTX)
     list(APPEND SOURCES D3DSharedTexture.cpp Direct3DContext.cpp)
 endif()
 
+if (ANDROID)
+    list(APPEND SOURCES AndroidHardwareBufferHandle.cpp)
+endif()
+
 if (HAS_VULKAN)
     list(APPEND SOURCES ImportedYCbCrVulkanImage.cpp VulkanContext.cpp VulkanImage.cpp)
 endif()
@@ -108,6 +112,10 @@ endif()
 
 if (WIN32)
     target_link_libraries(LibGfx PRIVATE dwrite)
+endif()
+
+if (ANDROID)
+    target_link_libraries(LibGfx PRIVATE nativewindow)
 endif()
 
 if (HAS_VULKAN)

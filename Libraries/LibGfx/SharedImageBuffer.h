@@ -49,6 +49,8 @@ public:
     LinuxDmaBufHandle const* linux_dmabuf_handle() const { return m_linux_dmabuf_handle.has_value() ? &m_linux_dmabuf_handle.value() : nullptr; }
 #elif defined(USE_DIRECTX)
     WindowsD3DHandle const* windows_d3d_handle() const { return m_windows_d3d_handle.has_value() ? &m_windows_d3d_handle.value() : nullptr; }
+#elif defined(AK_OS_ANDROID)
+    AndroidHardwareBufferHandle const* android_hardware_buffer() const { return m_android_hardware_buffer.has_value() ? &m_android_hardware_buffer.value() : nullptr; }
 #endif
 
 private:
@@ -64,6 +66,10 @@ private:
 #    ifdef USE_DIRECTX
     explicit SharedImageBuffer(WindowsD3DHandle&&);
     Optional<WindowsD3DHandle> m_windows_d3d_handle;
+#    endif
+#    ifdef AK_OS_ANDROID
+    explicit SharedImageBuffer(AndroidHardwareBufferHandle&&);
+    Optional<AndroidHardwareBufferHandle> m_android_hardware_buffer;
 #    endif
 #endif
     RefPtr<Bitmap> m_bitmap;
