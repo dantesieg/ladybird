@@ -13,18 +13,28 @@ import android.view.MotionEvent
 import android.view.View
 import java.net.URL
 
+// What the UI shows of a page.
+data class PageState(val url: String, val title: String, val isLoading: Boolean, val canGoBack: Boolean, val canGoForward: Boolean)
+
 /**
  * Wrapper around WebView::ViewImplementation for use by Kotlin
  */
 class WebViewImplementation(private val view: WebView) {
     // Instance Pointer to native object, very unsafe :)
     private var nativeInstance: Long = 0
-    private lateinit var resourceDir: String
-
-    fun initialize(resourceDir: String) {
-        this.resourceDir = resourceDir
-        nativeInstance = nativeObjectInit()
+    fun initialize(isPrivate: Boolean, websitesPreferDark: Boolean) {
+        nativeInstance = nativeObjectInit(isPrivate, websitesPreferDark)
     }
+
+    fun goBack() = nativeGoBack(nativeInstance)
+    fun goForward() = nativeGoForward(nativeInstance)
+    fun reload() = nativeReload(nativeInstance)
+    fun stopLoading() = nativeStopLoading(nativeInstance)
+    fun setVisible(visible: Boolean) = nativeSetVisible(nativeInstance, visible)
+    fun findInPage(query: String) = nativeFindInPage(nativeInstance, query)
+    fun findInPageNextMatch() = nativeFindInPageNextMatch(nativeInstance)
+    fun findInPagePreviousMatch() = nativeFindInPagePreviousMatch(nativeInstance)
+    fun findInPageEnd() = nativeFindInPageEnd(nativeInstance)
 
     fun dispose() {
         nativeObjectDispose(nativeInstance)
@@ -79,12 +89,25 @@ class WebViewImplementation(private val view: WebView) {
         view.invalidate()
     }
 
+    fun onStateChanged(url: String, title: String, isLoading: Boolean, canGoBack: Boolean, canGoForward: Boolean) {
+        view.onStateChanged(PageState(url, title, isLoading, canGoBack, canGoForward))
+    }
+
     fun onLoadStart(url: String, isRedirect: Boolean) {
         view.onLoadStart(url, isRedirect)
     }
 
     // Functions implemented in native code
-    private external fun nativeObjectInit(): Long
+    private external fun nativeObjectInit(isPrivate: Boolean, websitesPreferDark: Boolean): Long
+    private external fun nativeGoBack(instance: Long)
+    private external fun nativeGoForward(instance: Long)
+    private external fun nativeReload(instance: Long)
+    private external fun nativeStopLoading(instance: Long)
+    private external fun nativeSetVisible(instance: Long, visible: Boolean)
+    private external fun nativeFindInPage(instance: Long, query: String)
+    private external fun nativeFindInPageNextMatch(instance: Long)
+    private external fun nativeFindInPagePreviousMatch(instance: Long)
+    private external fun nativeFindInPageEnd(instance: Long)
     private external fun nativeObjectDispose(instance: Long)
 
     private external fun nativeDrawIntoBitmap(instance: Long, bitmap: Bitmap)

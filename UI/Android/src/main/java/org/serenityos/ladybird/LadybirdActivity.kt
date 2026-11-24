@@ -99,7 +99,7 @@ class LadybirdActivity : AppCompatActivity() {
             }
             false
         }
-        view.initialize(resourceDir)
+        view.initialize(isPrivate = false, websitesPreferDark = false)
         view.loadURL(intent.dataString ?: "https://ladybird.dev")
     }
 

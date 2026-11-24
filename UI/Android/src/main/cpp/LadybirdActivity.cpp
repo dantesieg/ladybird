@@ -125,12 +125,14 @@ Java_org_serenityos_ladybird_WebViewImplementation_00024Companion_nativeClassIni
     VERIFY(AndroidView::s_on_load_start_method);
     AndroidView::s_on_input_method_state_changed_method = env->GetMethodID(AndroidView::s_class, "onInputMethodStateChanged", "(Z)V");
     VERIFY(AndroidView::s_on_input_method_state_changed_method);
+    AndroidView::s_on_state_changed_method = env->GetMethodID(AndroidView::s_class, "onStateChanged", "(Ljava/lang/String;Ljava/lang/String;ZZZ)V");
+    VERIFY(AndroidView::s_on_state_changed_method);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_org_serenityos_ladybird_WebViewImplementation_nativeObjectInit(JNIEnv* env, jobject thiz)
+Java_org_serenityos_ladybird_WebViewImplementation_nativeObjectInit(JNIEnv* env, jobject thiz, jboolean is_private, jboolean websites_prefer_dark)
 {
-    auto view_or_error = AndroidView::create(env->NewGlobalRef(thiz), 1.0);
+    auto view_or_error = AndroidView::create(env->NewGlobalRef(thiz), 1.0, is_private, websites_prefer_dark);
     if (view_or_error.is_error()) {
         dbgln("Unable to create a view: {}", view_or_error.error());
         return 0;
@@ -181,6 +183,41 @@ Java_org_serenityos_ladybird_WebViewImplementation_nativeMouseEvent(JNIEnv*, job
 {
     if (auto* view = reinterpret_cast<AndroidView*>(instance))
         view->touch(event_type, x, y);
+}
+
+#define VIEW_METHOD(name, call)                                                                           \
+    extern "C" JNIEXPORT void JNICALL Java_org_serenityos_ladybird_WebViewImplementation_##name(JNIEnv*, jobject, jlong instance) \
+    {                                                                                                     \
+        if (auto* view = reinterpret_cast<AndroidView*>(instance))                                        \
+            view->call;                                                                                   \
+    }
+
+VIEW_METHOD(nativeGoBack, traverse_history_by_delta(-1))
+VIEW_METHOD(nativeGoForward, traverse_history_by_delta(1))
+VIEW_METHOD(nativeReload, reload())
+VIEW_METHOD(nativeStopLoading, stop_loading())
+VIEW_METHOD(nativeFindInPageNextMatch, find_in_page_next_match())
+VIEW_METHOD(nativeFindInPagePreviousMatch, find_in_page_previous_match())
+VIEW_METHOD(nativeFindInPageEnd, find_in_page_end())
+#undef VIEW_METHOD
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_serenityos_ladybird_WebViewImplementation_nativeSetVisible(JNIEnv*, jobject, jlong instance, jboolean visible)
+{
+    if (auto* view = reinterpret_cast<AndroidView*>(instance))
+        view->set_visible(visible);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_serenityos_ladybird_WebViewImplementation_nativeFindInPage(JNIEnv* env, jobject, jlong instance, jstring query)
+{
+    auto* view = reinterpret_cast<AndroidView*>(instance);
+    if (!view)
+        return;
+    auto const* characters = env->GetStringChars(query, nullptr);
+    auto length = env->GetStringLength(query);
+    view->find_in_page(Utf16String::from_utf16({ reinterpret_cast<char16_t const*>(characters), static_cast<size_t>(length) }));
+    env->ReleaseStringChars(query, characters);
 }
 
 extern "C" JNIEXPORT jobject JNICALL

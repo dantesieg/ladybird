@@ -70,7 +70,7 @@ class AndroidView {
     AK_ALLOC_WITH_KMALLOC;
 
 public:
-    static ErrorOr<NonnullOwnPtr<AndroidView>> create(jobject java_instance, double device_pixel_ratio);
+    static ErrorOr<NonnullOwnPtr<AndroidView>> create(jobject java_instance, double device_pixel_ratio, bool is_private, bool websites_prefer_dark);
     ~AndroidView();
 
     jobject java_instance() const { return m_java_instance; }
@@ -79,6 +79,14 @@ public:
     void set_device_pixel_ratio(double);
     void set_maximum_frames_per_second(double);
     void load(StringView url);
+    void traverse_history_by_delta(int delta);
+    void reload();
+    void stop_loading();
+    void set_visible(bool);
+    void find_in_page(Utf16String const& query);
+    void find_in_page_next_match();
+    void find_in_page_previous_match();
+    void find_in_page_end();
     void touch(int action, float x, float y);
     void scroll(float x, float y, float delta_x, float delta_y, Web::ScrollGesturePhase);
     void commit_text(Utf16String const&);
@@ -101,12 +109,13 @@ public:
     void did_clear_backing_stores();
     void did_start_loading();
     void did_change_url(URL::URL const&);
-    void did_change_input_method_state(bool is_enabled);
+    void did_change_state(Hub::ViewState const&);
 
     static jclass s_class;
     static jmethodID s_invalidate_layout_method;
     static jmethodID s_on_load_start_method;
     static jmethodID s_on_input_method_state_changed_method;
+    static jmethodID s_on_state_changed_method;
 
 private:
     AndroidView(jobject java_instance, u64 view_id, double device_pixel_ratio);

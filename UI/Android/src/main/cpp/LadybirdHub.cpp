@@ -29,6 +29,7 @@ jclass AndroidView::s_class;
 jmethodID AndroidView::s_invalidate_layout_method;
 jmethodID AndroidView::s_on_load_start_method;
 jmethodID AndroidView::s_on_input_method_state_changed_method;
+jmethodID AndroidView::s_on_state_changed_method;
 
 ErrorOr<NonnullRefPtr<HubClient>> HubClient::launch(ByteString const& helper_directory)
 {
@@ -175,7 +176,7 @@ void HubClient::view_url_change(u64 view_id, URL::URL url)
 void HubClient::view_state_changed(u64 view_id, Hub::ViewState state)
 {
     if (auto* view = find_view(view_id))
-        view->did_change_input_method_state(state.input_method_state.is_enabled);
+        view->did_change_state(state);
 }
 
 void HubClient::view_input_method_state_change(u64)
@@ -189,14 +190,14 @@ static Core::AnonymousBuffer load_default_theme()
     return MUST(Gfx::load_system_theme(theme_ini->filesystem_path().to_byte_string()));
 }
 
-ErrorOr<NonnullOwnPtr<AndroidView>> AndroidView::create(jobject java_instance, double device_pixel_ratio)
+ErrorOr<NonnullOwnPtr<AndroidView>> AndroidView::create(jobject java_instance, double device_pixel_ratio, bool is_private, bool websites_prefer_dark)
 {
     auto* hub = HubClient::the();
     if (!hub)
         return Error::from_string_literal("Not connected to the Hub");
 
     auto response = hub->create_view({
-        .is_private = WebView::IsPrivate::No,
+        .is_private = is_private ? WebView::IsPrivate::Yes : WebView::IsPrivate::No,
         .device_pixel_ratio = device_pixel_ratio,
         .maximum_frames_per_second = 60,
         .display_id = {},
@@ -204,13 +205,12 @@ ErrorOr<NonnullOwnPtr<AndroidView>> AndroidView::create(jobject java_instance, d
         .system_theme = load_default_theme(),
         .screen_rects = {},
         .owner_view_id = {},
-        .websites_prefer_dark = false,
+        .websites_prefer_dark = websites_prefer_dark,
         .is_tab = true,
     });
     auto view = adopt_own(*new AndroidView(java_instance, response.view_id(), device_pixel_ratio));
     hub->register_view(view->m_view_id, *view);
-    hub->async_view_set_system_visibility_state(view->m_view_id, Web::HTML::VisibilityState::Visible);
-    hub->async_view_set_has_system_focus(view->m_view_id, true);
+    view->set_visible(true);
     return view;
 }
 
@@ -344,14 +344,73 @@ void AndroidView::press_key(EditingKey editing_key)
     }
 }
 
-void AndroidView::did_change_input_method_state(bool is_enabled)
+void AndroidView::traverse_history_by_delta(int delta)
 {
-    if (m_input_method_is_enabled == is_enabled)
-        return;
-    m_input_method_is_enabled = is_enabled;
+    if (auto* hub = HubClient::the())
+        hub->async_view_traverse_the_history_by_delta(m_view_id, delta);
+}
 
+void AndroidView::reload()
+{
+    if (auto* hub = HubClient::the())
+        hub->async_view_reload(m_view_id, WebView::BypassCache::No);
+}
+
+void AndroidView::stop_loading()
+{
+    if (auto* hub = HubClient::the())
+        hub->async_view_stop_loading(m_view_id);
+}
+
+// Only the tab on screen is visible and focused, so that pages in other tabs throttle their work.
+void AndroidView::set_visible(bool visible)
+{
+    auto* hub = HubClient::the();
+    if (!hub)
+        return;
+    hub->async_view_set_system_visibility_state(m_view_id, visible ? Web::HTML::VisibilityState::Visible : Web::HTML::VisibilityState::Hidden);
+    hub->async_view_set_has_system_focus(m_view_id, visible);
+}
+
+void AndroidView::find_in_page(Utf16String const& query)
+{
+    if (auto* hub = HubClient::the())
+        hub->async_view_find_in_page(m_view_id, query, CaseSensitivity::CaseInsensitive, true);
+}
+
+void AndroidView::find_in_page_next_match()
+{
+    if (auto* hub = HubClient::the())
+        hub->async_view_find_in_page_next_match(m_view_id);
+}
+
+void AndroidView::find_in_page_previous_match()
+{
+    if (auto* hub = HubClient::the())
+        hub->async_view_find_in_page_previous_match(m_view_id);
+}
+
+void AndroidView::find_in_page_end()
+{
+    if (auto* hub = HubClient::the())
+        hub->async_view_find_in_page_end(m_view_id);
+}
+
+void AndroidView::did_change_state(Hub::ViewState const& state)
+{
     JavaEnvironment env(global_vm);
-    env.get()->CallVoidMethod(m_java_instance, s_on_input_method_state_changed_method, is_enabled);
+
+    auto url = env.jstring_from_ak_string(state.displayed_url.serialize());
+    auto title = env.jstring_from_ak_string(state.title.to_utf8());
+    env.get()->CallVoidMethod(m_java_instance, s_on_state_changed_method, url, title, state.is_loading, state.can_navigate_back, state.can_navigate_forward);
+    env.get()->DeleteLocalRef(url);
+    env.get()->DeleteLocalRef(title);
+
+    auto input_method_is_enabled = state.input_method_state.is_enabled;
+    if (m_input_method_is_enabled == input_method_is_enabled)
+        return;
+    m_input_method_is_enabled = input_method_is_enabled;
+    env.get()->CallVoidMethod(m_java_instance, s_on_input_method_state_changed_method, input_method_is_enabled);
 }
 
 void AndroidView::draw_into(JNIEnv* env, jobject bitmap)

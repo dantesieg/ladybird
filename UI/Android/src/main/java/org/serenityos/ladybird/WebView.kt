@@ -26,12 +26,17 @@ import android.widget.OverScroller
 import kotlin.math.hypot
 
 // FIXME: This should (eventually) implement NestedScrollingChild3 and ScrollingView
-class WebView(context: Context, attributeSet: AttributeSet) : View(context, attributeSet) {
+class WebView(context: Context, attributeSet: AttributeSet?) : View(context, attributeSet) {
+    constructor(context: Context) : this(context, null)
+
     private val viewImpl = WebViewImplementation(this)
     private lateinit var contentBitmap: Bitmap
     // The native side hands out one HardwareBuffer per backing store, and drops it once the store is gone.
     private val hardwareBitmaps = java.util.WeakHashMap<HardwareBuffer, Bitmap>()
     var onLoadStart: (url: String, isRedirect: Boolean) -> Unit = { _, _ -> }
+    var onStateChanged: (PageState) -> Unit = {}
+    var state = PageState("", "", false, false, false)
+        private set
     private var inputMethodIsEnabled = false
 
     init {
@@ -39,8 +44,30 @@ class WebView(context: Context, attributeSet: AttributeSet) : View(context, attr
         isFocusableInTouchMode = true
     }
 
-    fun initialize(resourceDir: String) {
-        viewImpl.initialize(resourceDir)
+    fun initialize(isPrivate: Boolean, websitesPreferDark: Boolean) {
+        viewImpl.initialize(isPrivate, websitesPreferDark)
+    }
+
+    fun goBack() = viewImpl.goBack()
+    fun goForward() = viewImpl.goForward()
+    fun reload() = viewImpl.reload()
+    fun stopLoading() = viewImpl.stopLoading()
+    fun findInPage(query: String) = viewImpl.findInPage(query)
+    fun findInPageNextMatch() = viewImpl.findInPageNextMatch()
+    fun findInPagePreviousMatch() = viewImpl.findInPagePreviousMatch()
+    fun findInPageEnd() = viewImpl.findInPageEnd()
+
+    // Only the tab on screen is visible to its page.
+    fun setPageVisible(visible: Boolean) = viewImpl.setVisible(visible)
+
+    // The last frame, drawn from the GPU, for showing the tab elsewhere, such as in the tab overview.
+    fun snapshot(): Bitmap? = viewImpl.currentHardwareBuffer()?.let { buffer ->
+        hardwareBitmaps.getOrPut(buffer) { Bitmap.wrapHardwareBuffer(buffer, ColorSpace.get(ColorSpace.Named.SRGB)) }
+    }
+
+    fun onStateChanged(newState: PageState) {
+        state = newState
+        onStateChanged.invoke(newState)
     }
 
     fun dispose() {
@@ -227,6 +254,8 @@ class WebView(context: Context, attributeSet: AttributeSet) : View(context, attr
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
+        if (w <= 0 || h <= 0)
+            return
         contentBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
 
         val pixelDensity = context.resources.displayMetrics.density
@@ -251,6 +280,8 @@ class WebView(context: Context, attributeSet: AttributeSet) : View(context, attr
             }
         }
 
+        if (!::contentBitmap.isInitialized)
+            return
         viewImpl.drawIntoBitmap(contentBitmap);
         canvas.drawBitmap(contentBitmap, 0f, 0f, null)
     }
