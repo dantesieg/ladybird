@@ -72,6 +72,7 @@ class Browser(activity: AppCompatActivity) {
     private var progressAnimator: ValueAnimator? = null
     private var shownProgressFor: Tab? = null
     private var wasLoading = false
+    private var navigationBarHeight = 0
 
     init {
         attach(activity)
@@ -82,10 +83,18 @@ class Browser(activity: AppCompatActivity) {
         overlay = null
         root = FrameLayout(activity)
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+        // Edge to edge: the page runs under the navigation bar, and only the keyboard pushes it up. Screens with
+        // controls at the bottom keep clear of the navigation bar themselves.
         root.setOnApplyWindowInsetsListener { view, insets ->
             val bars = insets.getInsets(WindowInsets.Type.systemBars())
             val ime = insets.getInsets(WindowInsets.Type.ime())
-            view.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
+            view.setPadding(bars.left, bars.top, bars.right, ime.bottom)
+            // NB: The keyboard covers the navigation bar, so the root's padding already keeps clear of both.
+            val clearance = if (ime.bottom > 0) 0 else bars.bottom
+            if (navigationBarHeight != clearance) {
+                navigationBarHeight = clearance
+                overlay?.let { it.setPadding(it.paddingLeft, it.paddingTop, it.paddingRight, navigationBarHeight) }
+            }
             insets
         }
         activity.setContentView(root)
@@ -221,8 +230,12 @@ class Browser(activity: AppCompatActivity) {
         tabStrip = ui.row()
         tabStripScroller = HorizontalScrollView(activity).apply {
             isHorizontalScrollBarEnabled = false
-            isFillViewport = true
             addView(tabStrip, FrameLayout.LayoutParams(WRAP, ui.dp(40)))
+            // The width of the current tab depends on the room there is, so the strip is laid out again once known.
+            addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+                if (right - left != oldRight - oldLeft)
+                    post { renderTabStrip() }
+            }
         }
         stripRow.addView(tabStripScroller, lp(0, ui.dp(40), 1f))
         stripRow.addView(ui.iconButton(R.drawable.ic_plus, 40, 20, "New tab", radius = 12f) { openTab(null, activeTab?.isPrivate ?: false) }, lp(ui.dp(40), ui.dp(40)).margins(left = ui.dp(6)))
@@ -256,7 +269,13 @@ class Browser(activity: AppCompatActivity) {
     private fun renderTabStrip() {
         tabStrip.removeAllViews()
         val active = activeTab
-        for (tab in tabs.filter { it.isPrivate == (active?.isPrivate ?: false) }) {
+        val shown = tabs.filter { it.isPrivate == (active?.isPrivate ?: false) }
+        // The current tab is the widest: it takes the room the others leave, but never more than the strip shows.
+        val available = tabStripScroller.width
+        val gap = ui.dp(6)
+        val otherWidth = ui.dp(96)
+        val activeWidth = if (available <= 0) ui.dp(150) else (available - (shown.size - 1) * (otherWidth + gap)).coerceIn(minOf(ui.dp(150), available), available)
+        for (tab in shown) {
             val isActive = tab == active
             val chip = ui.row()
             chip.setPadding(ui.dp(6), 0, ui.dp(10), 0)
@@ -271,9 +290,9 @@ class Browser(activity: AppCompatActivity) {
             chip.addView(initial, lp(ui.dp(26), ui.dp(26)))
             chip.addView(ui.text(tab.title, 14f, if (isActive) 600 else 500), lp(0, WRAP, 1f).margins(left = ui.dp(8)))
 
-            val params = if (isActive) lp(WRAP, ui.dp(40), 1f).apply { chip.minimumWidth = ui.dp(150) } else lp(ui.dp(96), ui.dp(40))
+            val params = lp(if (isActive) activeWidth else otherWidth, ui.dp(40))
             if (tabStrip.childCount > 0)
-                params.margins(left = ui.dp(6))
+                params.margins(left = gap)
             tabStrip.addView(chip, params)
             if (isActive)
                 chip.post { tabStripScroller.requestChildRectangleOnScreen(chip, android.graphics.Rect(0, 0, chip.width, chip.height), false) }
@@ -381,7 +400,7 @@ class Browser(activity: AppCompatActivity) {
     private fun buildNewTabPage(): View {
         val column = ui.column()
         column.setBackgroundColor(ui.color(R.color.paper))
-        column.setPadding(ui.dp(20), ui.dp(56), ui.dp(20), ui.dp(24))
+        column.setPadding(ui.dp(20), ui.dp(56), ui.dp(20), ui.dp(24) + navigationBarHeight)
 
         val brand = ui.column().apply { gravity = Gravity.CENTER_HORIZONTAL }
         brand.addView(ImageView(activity).apply { setImageResource(R.drawable.ladybird_logo); contentDescription = "Ladybird" }, lp(ui.dp(64), ui.dp(64)))
@@ -455,6 +474,7 @@ class Browser(activity: AppCompatActivity) {
 
     private fun showOverlay(view: View) {
         closeOverlay()
+        view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, navigationBarHeight)
         overlay = view
         root.addView(view, FrameLayout.LayoutParams(MATCH, MATCH))
     }
