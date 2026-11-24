@@ -18,6 +18,17 @@
 #    include <CoreGraphics/CoreGraphics.h>
 #    include <CoreVideo/CoreVideo.h>
 #    include <LibCore/EventLoop.h>
+#elif defined(AK_OS_ANDROID)
+#    include <AK/Atomic.h>
+#    include <AK/AtomicRefCounted.h>
+#    include <AK/NonnullRefPtr.h>
+#    include <LibCore/EventLoop.h>
+#    include <LibThreading/Thread.h>
+#    include <android/choreographer.h>
+#    include <android/looper.h>
+#    include <errno.h>
+#    include <sys/eventfd.h>
+#    include <unistd.h>
 #endif
 
 namespace Compositor {
@@ -343,6 +354,167 @@ OwnPtr<VSyncScheduler> create_vsync_scheduler(Optional<u64> display_id, Function
             return scheduler;
     }
 
+    return make<TimerVSyncScheduler>(move(tick_callback));
+}
+
+#elif defined(AK_OS_ANDROID)
+
+// Android hands out the display's vsync through AChoreographer, whose frame callbacks run on a thread with an ALooper.
+// That thread waits on its looper, and a request for a tick wakes it through an eventfd to ask for the next frame.
+class ChoreographerState final : public AtomicRefCounted<ChoreographerState> {
+public:
+    ChoreographerState(Core::EventLoop& event_loop, Function<void(MonotonicTime)>&& tick_callback, int wake_fd)
+        : event_loop(event_loop)
+        , tick_callback(move(tick_callback))
+        , wake_fd(wake_fd)
+    {
+    }
+
+    void wake()
+    {
+        u64 value = 1;
+        (void)::write(wake_fd, &value, sizeof(value));
+    }
+
+    Core::EventLoop& event_loop;
+    Function<void(MonotonicTime)> tick_callback;
+    int wake_fd { -1 };
+    Atomic<bool> is_valid { true };
+    Atomic<bool> is_stopping { false };
+    Atomic<bool> tick_requested { false };
+    Atomic<i64> most_recent_tick_time_nanoseconds { 0 };
+
+    // Only used on the choreographer thread.
+    AChoreographer* choreographer { nullptr };
+    bool frame_callback_is_pending { false };
+
+};
+
+static void choreographer_frame_callback(int64_t, void* data)
+{
+    auto& state = *static_cast<ChoreographerState*>(data);
+    state.frame_callback_is_pending = false;
+
+    // NB: Sample the shared monotonic clock on the choreographer thread so deferred delivery does not shift the frame
+    //     timestamp to the Compositor event-loop wakeup time.
+    auto frame_time = MonotonicTime::now();
+    state.most_recent_tick_time_nanoseconds.store(frame_time.nanoseconds());
+    if (!state.tick_requested.exchange(false))
+        return;
+
+    state.event_loop.deferred_invoke([state = NonnullRefPtr { state }, frame_time] {
+        if (state->is_valid)
+            state->tick_callback(frame_time);
+    });
+}
+
+static int choreographer_wake_callback(int fd, int, void* data)
+{
+    auto& state = *static_cast<ChoreographerState*>(data);
+    u64 value = 0;
+    (void)::read(fd, &value, sizeof(value));
+    if (state.is_stopping)
+        return 0;
+    if (state.tick_requested && !state.frame_callback_is_pending) {
+        state.frame_callback_is_pending = true;
+        AChoreographer_postFrameCallback64(state.choreographer, choreographer_frame_callback, &state);
+    }
+    return 1;
+}
+
+class ChoreographerVSyncScheduler final : public VSyncScheduler {
+public:
+    AK_ALLOC_WITH_KMALLOC;
+
+    // Hands the callback back if there is no choreographer, such as in a process that cannot reach SurfaceFlinger.
+    static OwnPtr<ChoreographerVSyncScheduler> try_create(Function<void(MonotonicTime)>& tick_callback)
+    {
+        int wake_fd = ::eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+        if (wake_fd < 0)
+            return nullptr;
+
+        // The thread says through this whether it found a choreographer: 1 if it did, and 2 if not.
+        int startup_fd = ::eventfd(0, EFD_CLOEXEC);
+        if (startup_fd < 0) {
+            ::close(wake_fd);
+            return nullptr;
+        }
+
+        auto state = adopt_ref(*new ChoreographerState(Core::EventLoop::current(), move(tick_callback), wake_fd));
+        auto thread = Threading::Thread::construct("Choreographer"sv, [state, startup_fd] {
+            auto* looper = ALooper_prepare(0);
+            state->choreographer = AChoreographer_getInstance();
+            u64 startup_result = state->choreographer ? 1 : 2;
+            (void)::write(startup_fd, &startup_result, sizeof(startup_result));
+            if (!state->choreographer)
+                return static_cast<intptr_t>(0);
+
+            ALooper_addFd(looper, state->wake_fd, ALOOPER_POLL_CALLBACK, ALOOPER_EVENT_INPUT, choreographer_wake_callback, state.ptr());
+            while (!state->is_stopping)
+                ALooper_pollOnce(-1, nullptr, nullptr, nullptr);
+            ALooper_removeFd(looper, state->wake_fd);
+            return static_cast<intptr_t>(0);
+        });
+        thread->start();
+
+        u64 startup_result = 0;
+        while (::read(startup_fd, &startup_result, sizeof(startup_result)) < 0 && errno == EINTR) {
+        }
+        ::close(startup_fd);
+        if (startup_result != 1) {
+            (void)thread->join();
+            tick_callback = move(state->tick_callback);
+            ::close(wake_fd);
+            return nullptr;
+        }
+        return adopt_own(*new ChoreographerVSyncScheduler(move(state), move(thread)));
+    }
+
+    virtual ~ChoreographerVSyncScheduler() override
+    {
+        m_state->is_valid = false;
+        m_state->is_stopping = true;
+        m_state->wake();
+        (void)m_thread->join();
+        ::close(m_state->wake_fd);
+    }
+
+    virtual void schedule(double) override
+    {
+        if (m_state->tick_requested.exchange(true))
+            return;
+        m_state->wake();
+    }
+
+    virtual Optional<MonotonicTime> most_recent_tick_time(MonotonicTime now, double refresh_rate) override
+    {
+        auto tick_time_nanoseconds = m_state->most_recent_tick_time_nanoseconds.load();
+        if (tick_time_nanoseconds == 0 || tick_time_nanoseconds > now.nanoseconds())
+            return {};
+
+        auto age_nanoseconds = now.nanoseconds() - tick_time_nanoseconds;
+        auto frame_interval_nanoseconds = static_cast<i64>((1'000'000'000.0 / refresh_rate) + 0.5);
+        if (age_nanoseconds >= frame_interval_nanoseconds)
+            return {};
+        return now - AK::Duration::from_nanoseconds(age_nanoseconds);
+    }
+
+private:
+    ChoreographerVSyncScheduler(NonnullRefPtr<ChoreographerState> state, NonnullRefPtr<Threading::Thread> thread)
+        : m_state(move(state))
+        , m_thread(move(thread))
+    {
+    }
+
+    NonnullRefPtr<ChoreographerState> m_state;
+    NonnullRefPtr<Threading::Thread> m_thread;
+};
+
+OwnPtr<VSyncScheduler> create_vsync_scheduler(Optional<u64>, Function<void(MonotonicTime)>&& tick_callback)
+{
+    if (auto scheduler = ChoreographerVSyncScheduler::try_create(tick_callback))
+        return scheduler;
+    dbgln("No AChoreographer, so frames are paced by a timer");
     return make<TimerVSyncScheduler>(move(tick_callback));
 }
 

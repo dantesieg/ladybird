@@ -72,6 +72,11 @@ if (HAS_FONTCONFIG)
     target_link_libraries(Compositor PRIVATE Fontconfig::Fontconfig)
 endif()
 
+if (ANDROID)
+    # The display's vsync comes from AChoreographer.
+    target_link_libraries(compositorservice PRIVATE LibThreading android)
+endif()
+
 if (HAS_VULKAN)
     target_sources(compositorservice PRIVATE SkiaVulkanMemoryAllocator.cpp)
     target_link_libraries(compositorservice PRIVATE Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
