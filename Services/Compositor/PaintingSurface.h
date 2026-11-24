@@ -24,6 +24,16 @@ struct VulkanImage;
 }
 #endif
 
+#ifdef AK_OS_ANDROID
+#    include <AK/Error.h>
+
+namespace Gfx {
+
+class AndroidHardwareBufferHandle;
+
+}
+#endif
+
 #ifdef USE_DIRECTX
 #    include <AK/Error.h>
 
@@ -74,6 +84,10 @@ public:
 
 #ifdef USE_VULKAN_DMABUF_IMAGES
     static NonnullRefPtr<PaintingSurface> create_from_vkimage(NonnullRefPtr<SkiaBackendContext> context, NonnullRefPtr<VulkanImage> vulkan_image, Origin origin, TextAntialiasing = TextAntialiasing::Grayscale);
+#endif
+
+#ifdef AK_OS_ANDROID
+    static ErrorOr<NonnullRefPtr<PaintingSurface>> create_from_android_hardware_buffer(NonnullRefPtr<SkiaBackendContext>, AndroidHardwareBufferHandle const&, TextAntialiasing = TextAntialiasing::Grayscale);
 #endif
 
 #ifdef USE_DIRECTX

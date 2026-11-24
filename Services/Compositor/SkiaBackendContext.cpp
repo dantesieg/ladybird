@@ -93,6 +93,11 @@ static u32 queue_family_receiving_shared_images(VulkanContext const& vulkan_cont
     auto has_foreign_queue_family = any_of(vulkan_context.enabled_device_extensions, [](char const* extension) {
         return strcmp(extension, VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME) == 0;
     });
+#ifdef AK_OS_ANDROID
+    // NB: Android's shared images are hardware buffers, which the UI reads outside of Vulkan.
+    if (has_foreign_queue_family)
+        return VK_QUEUE_FAMILY_FOREIGN_EXT;
+#endif
     return !vulkan_context.is_preferred_device && has_foreign_queue_family ? VK_QUEUE_FAMILY_FOREIGN_EXT : VK_QUEUE_FAMILY_EXTERNAL;
 }
 #endif

@@ -28,6 +28,9 @@
 #    include <LibGfx/VulkanImage.h>
 #    include <gpu/ganesh/vk/GrVkBackendSurface.h>
 #    include <gpu/ganesh/vk/GrVkTypes.h>
+#elif defined(AK_OS_ANDROID)
+#    include <LibGfx/AndroidHardwareBufferHandle.h>
+#    include <android/SkSurfaceAndroid.h>
 #elif defined(USE_DIRECTX)
 #    include <AK/Windows.h>
 #    include <LibGfx/D3DSharedTexture.h>
@@ -123,6 +126,18 @@ NonnullRefPtr<PaintingSurface> PaintingSurface::create_from_vkimage(NonnullRefPt
     sk_sp<SkSurface> surface = SkSurfaces::WrapBackendRenderTarget(context->sk_context(), rt, origin_to_sk_origin(origin), vk_format_to_sk_color_type(vulkan_image->info.format),
         SkColorSpace::MakeSRGB(), &properties, release_vulkan_image, vulkan_image.ptr());
     return adopt_impl(size, make<Impl>(context, surface, nullptr, true));
+}
+#endif
+
+#ifdef AK_OS_ANDROID
+ErrorOr<NonnullRefPtr<PaintingSurface>> PaintingSurface::create_from_android_hardware_buffer(NonnullRefPtr<SkiaBackendContext> context, AndroidHardwareBufferHandle const& hardware_buffer, TextAntialiasing text_antialiasing)
+{
+    // NB: Importing the buffer's memory into Vulkan takes a reference to the buffer, which keeps it alive with the surface.
+    auto properties = Compositor::skia_text_surface_properties(SkSurfaceProps::kDefault_Flag, text_antialiasing == TextAntialiasing::LCD);
+    auto surface = SkSurfaces::WrapAndroidHardwareBuffer(context->sk_context(), hardware_buffer.buffer(), kTopLeft_GrSurfaceOrigin, SkColorSpace::MakeSRGB(), &properties);
+    if (!surface)
+        return Error::from_string_literal("Failed to wrap the hardware buffer in a Skia surface");
+    return adopt_impl(hardware_buffer.size(), make<Impl>(context, surface, nullptr, true));
 }
 #endif
 

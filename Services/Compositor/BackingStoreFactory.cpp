@@ -21,6 +21,10 @@
 #    include <LibGfx/D3DSharedTexture.h>
 #endif
 
+#ifdef AK_OS_ANDROID
+#    include <LibGfx/AndroidHardwareBufferHandle.h>
+#endif
+
 namespace Compositor {
 
 #if defined(USE_DIRECTX) || defined(USE_VULKAN)
@@ -52,7 +56,7 @@ static NonnullRefPtr<Gfx::PaintingSurface> create_shareable_bitmap_backing_store
     return Gfx::PaintingSurface::wrap_bitmap(*buffer.bitmap(), Gfx::PaintingSurface::TextAntialiasing::LCD);
 }
 
-#if defined(USE_VULKAN_DMABUF_IMAGES) || defined(USE_DIRECTX)
+#if defined(USE_VULKAN_DMABUF_IMAGES) || defined(USE_DIRECTX) || defined(AK_OS_ANDROID)
 struct GpuBackingStore {
     RefPtr<Gfx::PaintingSurface> surface;
     Gfx::SharedImage shared_image;
@@ -116,6 +120,19 @@ static ErrorOr<GpuBackingStore> create_shared_gpu_backing_store(Gfx::IntSize siz
 }
 #endif
 
+#ifdef AK_OS_ANDROID
+static ErrorOr<GpuBackingStore> create_shared_gpu_backing_store(Gfx::IntSize size, Gfx::SkiaBackendContext& skia_backend_context)
+{
+    auto hardware_buffer = TRY(Gfx::AndroidHardwareBufferHandle::create(size));
+    auto surface = TRY(Gfx::PaintingSurface::create_from_android_hardware_buffer(skia_backend_context, hardware_buffer, Gfx::PaintingSurface::TextAntialiasing::LCD));
+
+    return GpuBackingStore {
+        .surface = move(surface),
+        .shared_image = Gfx::SharedImage { move(hardware_buffer) },
+    };
+}
+#endif
+
 static ErrorOr<NewBackingStore> create_shared_bitmap_backing_store(Gfx::IntSize size, RefPtr<Gfx::SkiaBackendContext> const& skia_backend_context)
 {
     auto shared_image_buffer = make<Gfx::SharedImageBuffer>(Gfx::SharedImageBuffer::create(size));
@@ -131,7 +148,7 @@ static ErrorOr<NewBackingStore> create_shared_bitmap_backing_store(Gfx::IntSize 
 
 static ErrorOr<NewBackingStore> create_shared_gpu_image_backing_store([[maybe_unused]] Gfx::IntSize size, [[maybe_unused]] RefPtr<Gfx::SkiaBackendContext> const& skia_backend_context)
 {
-#if defined(USE_VULKAN_DMABUF_IMAGES) || defined(USE_DIRECTX)
+#if defined(USE_VULKAN_DMABUF_IMAGES) || defined(USE_DIRECTX) || defined(AK_OS_ANDROID)
     if (!skia_backend_context)
         return Error::from_string_literal("Shared GPU images need a GPU");
     auto backing_store = create_shared_gpu_backing_store(size, *skia_backend_context);
