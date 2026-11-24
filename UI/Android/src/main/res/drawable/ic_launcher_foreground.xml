@@ -1,30 +1,7 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The mark from Meta/CMake/freedesktop/org.ladybird.Ladybird.svg, inside the safe zone of an adaptive icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <group android:scaleX="0.12444" android:scaleY="0.12444" android:translateX="-9.716" android:translateY="-9.716">
+        <path android:pathData="M512 512 L543.25 549.77 L574.05 585.96 L603.5 619.01 L631.15 647.34 L656.55 669.82 L679.04 685.11 L698.37 693.2 L714.11 693.2 L725.8 685.11 L733.44 669.82 L736.59 647.34 L735.69 619.01 L730.07 585.96 L720.41 549.77 L706.69 512 L689.16 474.23 L668.24 438.04 L644.19 404.99 L617.44 376.66 L588.89 354.18 L558.76 338.89 L527.74 330.8 L496.26 330.8 L465.24 338.89 L435.11 354.18 L406.56 376.66 L379.81 404.99 L355.76 438.04 L334.84 474.23 L317.31 512 L303.59 549.77 L293.93 585.96 L288.31 619.01 L287.41 647.34 L290.56 669.82 L298.2 685.11 L309.89 693.2 L325.63 693.2 L344.96 685.11 L367.45 669.82 L392.85 647.34 L420.5 619.01 L449.95 585.96 L480.75 549.77 L512 512 L543.25 474.23 L574.05 438.04 L603.5 404.99 L631.15 376.66 L656.55 354.18 L679.04 338.89 L698.37 330.8 L714.11 330.8 L725.8 338.89 L733.44 354.18 L736.59 376.66 L735.69 404.99 L730.07 438.04 L720.41 474.23 L706.69 512 L689.16 549.77 L668.24 585.96 L644.19 619.01 L617.44 647.34 L588.89 669.82 L558.76 685.11 L527.74 693.2 L496.26 693.2 L465.24 685.11 L435.11 669.82 L406.56 647.34 L379.81 619.01 L355.76 585.96 L334.84 549.77 L317.31 512 L303.59 474.23 L293.93 438.04 L288.31 404.99 L287.41 376.66 L290.56 354.18 L298.2 338.89 L309.89 330.8 L325.63 330.8 L344.96 338.89 L367.45 354.18 L392.85 376.66 L420.5 404.99 L449.95 438.04 L480.75 474.23Z" android:strokeColor="#FF6A39DB" android:strokeWidth="34.85" android:strokeLineJoin="round" android:fillColor="#00000000" />
+    </group>
 </vector>
