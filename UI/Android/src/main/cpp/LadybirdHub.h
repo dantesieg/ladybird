@@ -16,6 +16,8 @@
 #include <LibWebView/PageBackingStores.h>
 #include <jni.h>
 
+struct AHardwareBuffer;
+
 namespace Ladybird {
 
 class AndroidView;
@@ -62,8 +64,8 @@ private:
     bool m_did_initialize { false };
 };
 
-// One page shown in an Android View. Frames arrive from the Compositor through the Hub as shared bitmaps in CPU
-// memory, and the Java side copies the latest one into its own Bitmap when it draws.
+// One page shown in an Android View. Frames arrive from the Compositor through the Hub as hardware buffers, which the
+// Java side draws straight from, or without a GPU, as shared bitmaps in CPU memory, which it copies into its own Bitmap.
 class AndroidView {
     AK_ALLOC_WITH_KMALLOC;
 
@@ -86,6 +88,8 @@ public:
     };
     void press_key(EditingKey);
     void draw_into(JNIEnv*, jobject bitmap);
+    // The android.hardware.HardwareBuffer of the frame to show, as a new local reference, or null.
+    jobject current_hardware_buffer(JNIEnv*);
 
     // From the Hub.
     void did_install_backing_stores(u64 page_id, Vector<i32> bitmap_ids, Vector<Gfx::SharedImage>);
@@ -94,7 +98,7 @@ public:
     void did_present_backing_store(u64 page_id, i32 bitmap_id, Gfx::IntSize, double device_pixel_ratio);
     void did_keep_front_as_backup() { m_backing_stores.keep_front_as_backup(); }
     void did_clear_backup() { m_backing_stores.clear_backup(); }
-    void did_clear_backing_stores() { m_backing_stores.clear(); }
+    void did_clear_backing_stores();
     void did_start_loading();
     void did_change_url(URL::URL const&);
     void did_change_input_method_state(bool is_enabled);
@@ -109,6 +113,7 @@ private:
 
     void send_viewport();
     void invalidate();
+    void forget_java_hardware_buffers();
 
     jobject m_java_instance { nullptr };
     u64 m_view_id { 0 };
@@ -117,6 +122,8 @@ private:
     int m_width { 0 };
     int m_height { 0 };
     WebView::PageBackingStores m_backing_stores;
+    // Java wrappers of the hardware buffers, made once per buffer so that the Java side can keep a Bitmap for each.
+    HashMap<AHardwareBuffer const*, jobject> m_java_hardware_buffers;
     u64 m_backing_stores_page_id { 0 };
     URL::URL m_url;
     bool m_input_method_is_enabled { false };

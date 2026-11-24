@@ -7,6 +7,7 @@
 package org.serenityos.ladybird
 
 import android.graphics.Bitmap
+import android.hardware.HardwareBuffer
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
@@ -37,6 +38,8 @@ class WebViewImplementation(private val view: WebView) {
     fun drawIntoBitmap(bitmap: Bitmap) {
         nativeDrawIntoBitmap(nativeInstance, bitmap)
     }
+
+    fun currentHardwareBuffer(): HardwareBuffer? = nativeCurrentHardwareBuffer(nativeInstance)
 
     fun setViewportGeometry(w: Int, h: Int) {
         nativeSetViewportGeometry(nativeInstance, w, h)
@@ -89,6 +92,7 @@ class WebViewImplementation(private val view: WebView) {
     private external fun nativeSetDevicePixelRatio(instance: Long, ratio: Float)
     private external fun nativeLoadURL(instance: Long, url: String)
     private external fun nativeMouseEvent(instance: Long, eventType: Int, x: Float, y: Float, rawX: Float, rawY: Float)
+    private external fun nativeCurrentHardwareBuffer(instance: Long): HardwareBuffer?
     private external fun nativeSetMaximumFramesPerSecond(instance: Long, framesPerSecond: Float)
     private external fun nativeScroll(instance: Long, x: Float, y: Float, deltaX: Float, deltaY: Float, phase: Int)
     private external fun nativeCommitText(instance: Long, text: String)

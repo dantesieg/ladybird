@@ -8,7 +8,7 @@ add_library(ladybird SHARED
 target_include_directories(ladybird PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../.. ${LADYBIRD_SOURCE_DIR}/Services)
 # JNI entry points are found by name at run time, so they have no declarations in a header.
 target_compile_options(ladybird PRIVATE -Wno-missing-prototypes)
-target_link_libraries(ladybird PRIVATE LibFileSystem LibGfx LibURL jnigraphics android log)
+target_link_libraries(ladybird PRIVATE LibFileSystem LibGfx LibURL jnigraphics android nativewindow log)
 
 include(../cmake/AndroidExtras.cmake)
 create_ladybird_bundle(ladybird)

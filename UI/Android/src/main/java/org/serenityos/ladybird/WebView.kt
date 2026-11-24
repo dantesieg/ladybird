@@ -9,6 +9,8 @@ package org.serenityos.ladybird
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.ColorSpace
+import android.hardware.HardwareBuffer
 import android.text.InputType
 import android.util.AttributeSet
 import android.view.KeyEvent
@@ -27,6 +29,8 @@ import kotlin.math.hypot
 class WebView(context: Context, attributeSet: AttributeSet) : View(context, attributeSet) {
     private val viewImpl = WebViewImplementation(this)
     private lateinit var contentBitmap: Bitmap
+    // The native side hands out one HardwareBuffer per backing store, and drops it once the store is gone.
+    private val hardwareBitmaps = java.util.WeakHashMap<HardwareBuffer, Bitmap>()
     var onLoadStart: (url: String, isRedirect: Boolean) -> Unit = { _, _ -> }
     private var inputMethodIsEnabled = false
 
@@ -236,6 +240,16 @@ class WebView(context: Context, attributeSet: AttributeSet) : View(context, attr
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+
+        viewImpl.currentHardwareBuffer()?.let { buffer ->
+            val bitmap = hardwareBitmaps.getOrPut(buffer) {
+                Bitmap.wrapHardwareBuffer(buffer, ColorSpace.get(ColorSpace.Named.SRGB))
+            }
+            if (bitmap != null) {
+                canvas.drawBitmap(bitmap, 0f, 0f, null)
+                return
+            }
+        }
 
         viewImpl.drawIntoBitmap(contentBitmap);
         canvas.drawBitmap(contentBitmap, 0f, 0f, null)

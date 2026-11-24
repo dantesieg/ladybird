@@ -18,6 +18,7 @@
 #include <LibURL/Parser.h>
 #include <LibWebView/Utilities.h>
 #include <android/bitmap.h>
+#include <android/hardware_buffer_jni.h>
 #include <sys/socket.h>
 
 namespace Ladybird {
@@ -208,7 +209,6 @@ ErrorOr<NonnullOwnPtr<AndroidView>> AndroidView::create(jobject java_instance, d
     });
     auto view = adopt_own(*new AndroidView(java_instance, response.view_id(), device_pixel_ratio));
     hub->register_view(view->m_view_id, *view);
-    hub->async_view_set_presents_from_cpu_memory(view->m_view_id, true);
     hub->async_view_set_system_visibility_state(view->m_view_id, Web::HTML::VisibilityState::Visible);
     hub->async_view_set_has_system_focus(view->m_view_id, true);
     return view;
@@ -223,6 +223,7 @@ AndroidView::AndroidView(jobject java_instance, u64 view_id, double device_pixel
 
 AndroidView::~AndroidView()
 {
+    forget_java_hardware_buffers();
     if (auto* hub = HubClient::the()) {
         hub->unregister_view(m_view_id);
         hub->async_destroy_view(m_view_id);
@@ -364,7 +365,7 @@ void AndroidView::draw_into(JNIEnv* env, jobject bitmap)
 
     auto* destination = static_cast<u8*>(pixels);
     auto frame = m_backing_stores.displayed_frame();
-    if (frame.has_value() && frame->shared_image_buffer) {
+    if (frame.has_value() && frame->shared_image_buffer && frame->shared_image_buffer->bitmap_if_present()) {
         auto source = frame->shared_image_buffer->bitmap();
         auto width = min<int>(info.width, min(frame->size.width(), source->width()));
         auto height = min<int>(info.height, min(frame->size.height(), source->height()));
@@ -390,6 +391,37 @@ void AndroidView::draw_into(JNIEnv* env, jobject bitmap)
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
+jobject AndroidView::current_hardware_buffer(JNIEnv* env)
+{
+    auto frame = m_backing_stores.displayed_frame();
+    if (!frame.has_value() || !frame->shared_image_buffer)
+        return nullptr;
+    auto const* hardware_buffer = frame->shared_image_buffer->android_hardware_buffer();
+    if (!hardware_buffer)
+        return nullptr;
+
+    jobject java_buffer = m_java_hardware_buffers.get(hardware_buffer->buffer()).value_or(nullptr);
+    if (!java_buffer) {
+        auto local = AHardwareBuffer_toHardwareBuffer(env, hardware_buffer->buffer());
+        if (!local)
+            return nullptr;
+        java_buffer = env->NewGlobalRef(local);
+        env->DeleteLocalRef(local);
+        m_java_hardware_buffers.set(hardware_buffer->buffer(), java_buffer);
+    }
+    return env->NewLocalRef(java_buffer);
+}
+
+void AndroidView::forget_java_hardware_buffers()
+{
+    if (m_java_hardware_buffers.is_empty())
+        return;
+    JavaEnvironment env(global_vm);
+    for (auto& it : m_java_hardware_buffers)
+        env.get()->DeleteGlobalRef(it.value);
+    m_java_hardware_buffers.clear();
+}
+
 void AndroidView::invalidate()
 {
     JavaEnvironment env(global_vm);
@@ -399,6 +431,7 @@ void AndroidView::invalidate()
 void AndroidView::did_install_backing_stores(u64 page_id, Vector<i32> bitmap_ids, Vector<Gfx::SharedImage> backing_stores)
 {
     auto front_bitmap_id = bitmap_ids.first();
+    forget_java_hardware_buffers();
     if (auto result = m_backing_stores.install(move(bitmap_ids), move(backing_stores)); result.is_error()) {
         dbgln("Could not install backing stores for page {}: {}", page_id, result.error());
         if (auto* hub = HubClient::the())
@@ -416,7 +449,14 @@ void AndroidView::did_add_backing_stores(Vector<i32> bitmap_ids, Vector<Gfx::Sha
 
 void AndroidView::did_retire_backing_stores(Vector<i32> const& bitmap_ids)
 {
+    forget_java_hardware_buffers();
     m_backing_stores.retire(bitmap_ids);
+}
+
+void AndroidView::did_clear_backing_stores()
+{
+    forget_java_hardware_buffers();
+    m_backing_stores.clear();
 }
 
 void AndroidView::did_present_backing_store(u64 page_id, i32 bitmap_id, Gfx::IntSize size, double device_pixel_ratio)

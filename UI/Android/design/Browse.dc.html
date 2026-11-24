@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ladybird browsing a page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Newsreader:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6A39DB}a:hover{color:#17181C}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #FFFFFF; color: #17181C; font-family: 'Instrument Sans', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="position: relative; background: #FBFAF7; border-bottom: 1px solid #E7E5DF; padding: 10px 8px 8px; display: flex; flex-direction: column; gap: 8px">
+    <div role="tablist" aria-label="Tabs" style="display: flex; align-items: center; gap: 6px">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+        <a href="{{t.href}}" role="tab" aria-selected="{{t.active}}" style="{{t.style}}">
+          <span style="{{t.dotStyle}}">{{t.initial}}</span>
+          <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{t.title}}</span>
+        </a>
+      </sc-for>
+      <a href="NewTab.dc.html" aria-label="New tab" style="flex: none; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #17181C">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      </a>
+      <a href="Tabs.dc.html" aria-label="All tabs" style="flex: none; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #17181C">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg>
+      </a>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 4px">
+      <button aria-label="Back" style="flex: none; width: 44px; height: 44px; border: 0; border-radius: 999px; background: transparent; display: flex; align-items: center; justify-content: center; color: #17181C">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      </button>
+      <a href="Address.dc.html" aria-label="Address, fieldnotes.example" style="flex: 1; min-width: 0; height: 44px; padding: 0 14px; border-radius: 999px; background: #F1EFEA; display: flex; align-items: center; gap: 8px; color: #17181C; text-decoration: none; font-size: 16px; font-weight: 500">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">fieldnotes.example</span>
+      </a>
+      <button aria-label="Reload" style="flex: none; width: 44px; height: 44px; border: 0; border-radius: 999px; background: transparent; display: flex; align-items: center; justify-content: center; color: #17181C">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"></path></svg>
+      </button>
+      <a href="Menu.dc.html" aria-label="Menu" style="flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17181C">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg>
+      </a>
+    </div>
+
+    <div style="position: absolute; left: 0; right: 0; bottom: -1px; height: 3px">
+      <div style="width: {{progress}}; height: 3px; background: {{accent}}"></div>
+    </div>
+  </header>
+
+  <main style="flex: 1; min-height: 0; overflow: hidden; padding: 24px 22px 0; display: flex; flex-direction: column; gap: 16px; font-family: 'Newsreader', Georgia, serif">
+    <div style="font-family: 'Instrument Sans', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #6B4E2E">Field notes</div>
+    <h1 style="margin: 0; font-size: 34px; line-height: 1.1; font-weight: 600">What lives under a single oak leaf</h1>
+    <div style="font-family: 'Instrument Sans', sans-serif; font-size: 14px; color: #5D6069">12 min read</div>
+    <div style="height: 200px; flex: none; border-radius: 16px; background: #DDE6D5; display: flex; align-items: center; justify-content: center; font-family: 'Instrument Sans', sans-serif; font-size: 14px; color: #3F4A38">[Photo]</div>
+    <p style="margin: 0; font-size: 19px; line-height: 1.55">Turn one over in late spring and you find a small city: aphids farming sap, the ants that tend them, and the spotted beetles that come for both. Most of it happens within a few centimetres.</p>
+    <p style="margin: 0; font-size: 19px; line-height: 1.55">The beetles arrive first. A single one eats dozens of aphids in a day, and the larvae eat more.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#6A39DB","options":["#6A39DB","#5B2FC4","#C8202B"]},"loading":{"editor":"range","default":60,"min":0,"max":100,"unit":"%"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#6A39DB';
+    const loading = this.props.loading ?? 60;
+    const rows = [
+      ['Oak leaf', 'F', '#DDE6D5', true],
+      ['Ladybird', 'L', '#ECE6FB', false],
+      ['Weather', 'W', '#DCE7F2', false]
+    ];
+    const tabs = rows.map(([title, initial, tint, active]) => ({
+      title, initial, active,
+      href: active ? 'Browse.dc.html' : 'Browse.dc.html',
+      style: 'flex: ' + (active ? '1 1 0' : '0 1 96px') + '; min-width: 0; height: 40px; padding: 0 10px 0 6px; border-radius: 12px; display: flex; align-items: center; gap: 8px; text-decoration: none; color: #17181C; font-size: 14px; font-weight: ' + (active ? '600' : '500') + '; ' + (active ? 'background: #FFFFFF; box-shadow: inset 0 0 0 1.5px #17181C' : 'background: #F1EFEA'),
+      dotStyle: 'flex: none; width: 26px; height: 26px; border-radius: 8px; background: ' + tint + '; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700'
+    }));
+    return { accent, tabs, progress: (loading >= 100 ? 0 : loading) + '%' };
+  }
+}
+</script>
+</body>
+</html>

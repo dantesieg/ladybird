@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ladybird tabs, dark</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121316}
+a{color:#6A39DB}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #272A30; color: #ECEAE4; font-family: 'Instrument Sans', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <header style="padding: 26px 16px 14px; display: flex; flex-direction: column; gap: 14px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.6px">3 tabs</h1>
+    <div role="group" aria-label="Tab set" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: #1A1B1F">
+      <button aria-pressed="true" style="height: 40px; border: 0; border-radius: 999px; background: #1D1F24; font: inherit; font-size: 15px; font-weight: 600; color: #ECEAE4">Tabs</button>
+      <button aria-pressed="false" style="height: 40px; border: 0; border-radius: 999px; background: transparent; font: inherit; font-size: 15px; font-weight: 600; color: #B4B7BE">Private</button>
+    </div>
+  </header>
+
+  <section aria-label="Open tabs" style="flex: 1; min-height: 0; padding: 0 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-content: start">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+      <a href="BrowseDark.dc.html" style="{{t.cardStyle}}">
+        <span style="display: flex; align-items: center; gap: 6px; padding: 8px 6px 8px 12px">
+          <span style="flex: 1; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{t.title}}</span>
+          <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #8F929B">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </span>
+        </span>
+        <span style="{{t.thumbStyle}}">{{t.host}}</span>
+      </a>
+    </sc-for>
+  </section>
+
+  <nav aria-label="Tab actions" style="padding: 12px 16px 28px; display: flex; gap: 10px; background: #272A30">
+    <a href="NewTabDark.dc.html" style="flex: 1; height: 52px; border-radius: 999px; background: {{accent}}; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New tab</a>
+    <a href="BrowseDark.dc.html" style="height: 52px; padding: 0 22px; border-radius: 999px; border: 2px solid #ECEAE4; box-sizing: border-box; color: #ECEAE4; text-decoration: none; display: flex; align-items: center; font-size: 16px; font-weight: 600">Done</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#6A39DB","options":["#6A39DB","#5B2FC4","#C8202B"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#6A39DB';
+    const rows = [
+      ['What lives under a single oak leaf', 'fieldnotes.example', '#25332A', true],
+      ['Ladybird', 'ladybird.org', '#272040', false],
+      ['Weather for today', 'weather.example', '#1E2B39', false]
+    ];
+    const tabs = rows.map(([title, host, tint, current]) => ({
+      title, host,
+      cardStyle: 'display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; background: #1D1F24; color: #ECEAE4; text-decoration: none; ' + (current ? 'outline: 3px solid ' + accent + '; outline-offset: -3px' : 'outline: 1px solid #1A1B1F; outline-offset: -1px'),
+      thumbStyle: 'height: 190px; margin: 0 6px 6px; border-radius: 14px; background: ' + tint + '; display: flex; align-items: flex-end; padding: 10px; box-sizing: border-box; font-family: JetBrains Mono, monospace; font-size: 11px; color: #B4B7BE'
+    }));
+    return { accent, tabs };
+  }
+}
+</script>
+</body>
+</html>

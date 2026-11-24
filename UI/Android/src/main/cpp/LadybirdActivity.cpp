@@ -183,6 +183,14 @@ Java_org_serenityos_ladybird_WebViewImplementation_nativeMouseEvent(JNIEnv*, job
         view->touch(event_type, x, y);
 }
 
+extern "C" JNIEXPORT jobject JNICALL
+Java_org_serenityos_ladybird_WebViewImplementation_nativeCurrentHardwareBuffer(JNIEnv* env, jobject, jlong instance)
+{
+    if (auto* view = reinterpret_cast<AndroidView*>(instance))
+        return view->current_hardware_buffer(env);
+    return nullptr;
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_org_serenityos_ladybird_WebViewImplementation_nativeSetMaximumFramesPerSecond(JNIEnv*, jobject, jlong instance, jfloat maximum_frames_per_second)
 {
